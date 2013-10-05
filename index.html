@@ -5,198 +5,88 @@
         <title>Bustime</title>
     </head>
 
-    <link href='http://fonts.googleapis.com/css?family=Arimo:700' rel='stylesheet' type='text/css'>
-    <link href='flat-ui.css' rel='stylesheet' type='text/css'>
+    <link href='css/main.css' rel='stylesheet' type='text/css'>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body, html, #app {
-            background: #2C3E50;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            afont-family: 'Arimo', sans-serif;
-            color: #efefef;
-        }
-
-        #app {
-            position: relative;
-        }
-
-        #bus {
-            display: block;
-            width: 30%;
-            margin: 0 auto;
-        }
-
-        #msg {
-            margin: 0;
-            font-size: 72px;
-            font-weight: bolder;
-            text-align: center;
-        }
-
-        #stops-away {
-            margin: 0;
-            font-size: 64px;
-            font-weight: bolder;
-            text-align: center;
-        }
-
-        .display {
-            display: none;
-        }
-
-        form {
-            height: 200px;
-            width: 300px;
-            background: #222;
-            opacity: 0;
-            padding-top: 10px;
-            top: 50%;
-            left: 50%;
-            margin-left: -150px;
-            margin-top: -100px;
-            position: absolute;
-            border-radius: 6px;
-            -webkit-transition: opacity .5s;
-        }
- 
-        form.show {
-            opacity: 1;
-        }
-
-        .display.show {
-            display: block;
-        }
-
-        input, button {
-            display: block;
-            margin: 10px auto;
-        }
-
-    </style>
-
-    <body class="container">
+    <body>
         
-        <div id="app">
-            <div class="display">
-                <img id="bus" src="bus.svg" />
-                <p id="msg"></p>
-                <p id="stops-away"></p>
+        <div class="displays gone"></div>
+
+        <div class="row">
+
+            <div class="setup">
+                <div class="controls rounded">
+                    <h1>Let's Get Started</h1>
+                    <form>
+                    </form>
+                </div>
+                <div class="arrow_box"></div>
+                <img class="bus-icon" src="images/left-bus.svg" />
             </div>
-            <form class="row rounded palette-wet-asphalt">
-                <input type="text" placeholder="Stop ID" class="form-control stop-id" />
-                <input type="text" placeholder="Line ID" class="form-control line-id" />
-                <button class="btn btn-block btn-lg btn-primary">Ok</button>
-            </form>
+
         </div>
 
-        <script src='jquery.js'></script>
-        <script>
-            
-            (function($) {
-
-                var endpoint = "http://bustime.mta.info/api/siri/stop-monitoring.json";
-                var apiKey = "GET YOUR OWN API KEY";
-
-                var storeFormData = function(e) {
-
-                    e.preventDefault();
-
-                    var stopId = $(this).find('.stop-id').val();
-                    var lineId = $(this).find('.line-id').val();
-
-                    store('stop-id', stopId);
-                    store('line-id', lineId);
-
-                    showDisplay();
-
-                    console.log(stopId, lineId);
-
-                    beginPolling(stopId, lineId);
-                };
-
-                var promptForIds = function() {
-                    $('form').addClass('show');
-                    $('form').on('submit', storeFormData);
-                };
-
-                var makeReq = function(stopId, lineId) {
-                    var data = {
-                        key: apiKey,
-                        LineRef: lineId,
-                        MonitoringRef: stopId
-                    };
-                    return $.ajax({
-                        url: endpoint,
-                        data: data,
-                        dataType: 'jsonp'
-                    });
-                }
-
-                var showDisplay = function() {
-                    $('.display').addClass('show');
-                    $('form').removeClass('show');
-                }
-
-                var updateDisplay = function(result) {
-                    console.log(result);
-                    var distances = result.Siri
-                                .ServiceDelivery
-                                .StopMonitoringDelivery[0]
-                                .MonitoredStopVisit[0]
-                                .MonitoredVehicleJourney
-                                .MonitoredCall
-                                .Extensions
-                                .Distances;
-
-                    var presentable = distances.PresentableDistance;
-                    var stopsAway = distances.StopsFromCall;
-
-                    $('#msg').text(presentable);
-                    $('#stops-away').text(stopsAway + " stops away");
-                }
-
-                var beginPolling = function(stopId, lineId) {
-
-                    var req = makeReq(stopId, lineId);
-                    req.done(updateDisplay);
-
-                    setInterval(function() {
-                        var req = makeReq(stopId, lineId);
-                        req.done(updateDisplay);
-                    }, 10 * 1000);
-
-                }
-
-                var getFromStorage = function(key) {
-                    return JSON.parse(window.localStorage[key] || false);
-                };
-
-                var store = function(key, val) {
-                    window.localStorage[key] = JSON.stringify(val);
-                    return val;
-                }
-
-                var stopId = getFromStorage('stop-id');
-                var lineId = getFromStorage('line-id');
-
-                if (!stopId || !lineId) {
-                    promptForIds();
-                } 
-
-                if (stopId && lineId) {
-                    showDisplay();
-                    beginPolling(stopId, lineId);
-                }
-                
-            })(window.jQuery)
-
+        <script id="display-tpl" type="text/html">
+            <h1>
+                <%= config.get('route').get('shortName') %> - 
+                <%= config.get('route').get('longName') %>
+            </h1>
+            <img src="images/left-bus.svg" />
+            <h1><%= config.get('stop').get('name') %></h1>
+            <% if (distances) { %>
+                <h1><%= distances.get('PresentableDistance') %></h1>
+            <% }  %>
         </script>
+
+        <script id="form-tpl" type="text/html">
+            <div class="row line-id">
+                <% if (route) { %>
+                    <div class="chosen">
+                        <%= route.get('shortName') %> - 
+                        <%= route.get('longName') %>
+                    </div>
+                <% } else { %>
+                    <input class="rounded" type="text" placeholder="Bus Line (e.g. B63)">
+                    <button class="primary rounded disabled">Use</button>
+                <% }  %>
+            </div>
+            <% if (route) { %>
+                <div class="row stop-id">
+                <% if (stop) { %>
+                    <div class="chosen">
+                        <%= stop.get('name').toLowerCase() %>  
+                    </div>
+                <% } else { %>
+                    <input class="rounded" type="text" placeholder="Cross Streets?">
+                    <ul class="rounded" id="stop-results"></ul>
+                <% }  %>
+                </div>
+            <% }  %>
+            <% if (route && stop) { %>
+                <div class="row start">
+                    <button class="submit rounded">Start Dashboard</button>
+                    <p><a href="#" class="clear">clear</a></p>
+                </div>
+            <% }  %>
+        </form>
+        </script>
+
+        <script id="stop-tpl" type="text/html">
+            <li data-stop-id="<%= code %>">
+                <span>
+                    <%= name.toLowerCase() %>
+                </span>
+                <span>
+                    <%= direction %>
+                </span>
+            </li>
+        </script>
+
+        <!-- scripts -->
+        <script src='js/jquery.js'></script>
+        <script src='js/underscore.js'></script>
+        <script src='js/backbone.js'></script>
+        <script src='js/app.js'></script>
+
     </body>
 
 </html>
