@@ -220,7 +220,11 @@
     }
 
     var get = function(key) {
-        return JSON.parse(window.localStorage[key]);
+        try {
+            return JSON.parse(window.localStorage[key]);
+        } catch (e) {
+            return {};
+        }
     }
 
     var ConfigForm = Backbone.View.extend({
